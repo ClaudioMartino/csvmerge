@@ -1,5 +1,6 @@
 import csv
 import argparse
+from itertools import zip_longest
 
 
 def print_highlighted_cell(row, i_to_highlight, header):
@@ -32,56 +33,54 @@ def csvmerge(inputfile1_path, inputfile2_path, outputfile_path, always=0):
         reader1 = csv.reader(inputfile1)
         reader2 = csv.reader(inputfile2)
 
-        for (i_row, row1), row2 in zip(enumerate(reader1), reader2):
+        i_row = 0
+        for row1, row2 in zip_longest(reader1, reader2):
             output_row = []
-            for (i_col, c1), c2 in zip(enumerate(row1), row2):
-                if c1 != c2:
-                    if always:
-                        if always == 1:
-                            output_row.append(c1)
-                        if always == 2:
-                            output_row.append(c2)
-                    else:
-                        while True:
-                            print(f"--- Row {i_row + 1} of {tot_rows}, Column \
-{i_col + 1} ---")
-                            print_highlighted_cell(row1, i_col, "[1]")
-                            print_highlighted_cell(row2, i_col, "[2]")
-                            user_input = input("> ")
-                            if user_input == "1":
+            if row1 and row2:
+                for (i_col, c1), c2 in zip(enumerate(row1), row2):
+                    if c1 != c2:
+                        if always:
+                            if always == 1:
                                 output_row.append(c1)
-                                break
-                            elif user_input == "2":
+                            if always == 2:
                                 output_row.append(c2)
-                                break
-                            elif user_input == "q":
-                                return
-                            else:
-                                print("Invalid input. Type 1 or 2 to select \
-the file, q to exit.")
-                else:
-                    output_row.append(c1)
+                        else:
+                            while True:
+                                print(f"--- Row {i_row + 1} of {tot_rows}, \
+Column {i_col + 1} ---")
+                                print_highlighted_cell(row1, i_col, "[1]")
+                                print_highlighted_cell(row2, i_col, "[2]")
+                                user_input = input("> ")
+                                if user_input == "1":
+                                    output_row.append(c1)
+                                    break
+                                elif user_input == "2":
+                                    output_row.append(c2)
+                                    break
+                                elif user_input == "q":
+                                    return
+                                else:
+                                    print("Invalid input. Type 1 or 2 to \
+select the file, q to exit.")
+                    else:
+                        output_row.append(c1)
 
-            # Handle tail for rows with different number of columns
-            if len(row1) > len(row2):
-                print(f"Adding columns {len(row2)+1}:{len(row1)} from file 1")
-                output_row.extend(row1[len(row2):])
-            if len(row2) > len(row1):
-                print(f"Adding columns {len(row1)+1}:{len(row2)} from file 2")
-                output_row.extend(row2[len(row1):])
-
+                # Handle tail for rows with different number of columns
+                if len(row1) > len(row2):
+                    print(f"Adding columns {len(row2)+1} to {len(row1)} from \
+file 1")
+                    output_row.extend(row1[len(row2):])
+                if len(row2) > len(row1):
+                    print(f"Adding columns {len(row1)+1} to {len(row2)} from \
+file 2")
+                    output_row.extend(row2[len(row1):])
+            else:
+                if row1:
+                    output_row.extend(row1)
+                if row2:
+                    output_row.extend(row2)
             writer.writerow(output_row)
-
-        # Handle tail for files with different number of rows
-        cnt = 0
-        for row1 in reader1:
-            writer.writerow(row1)
-            cnt += 1
-        for row2 in reader2:
-            writer.writerow(row2)
-            cnt += 1
-        if cnt:
-            print(f"Adding {cnt} remaining rows")
+            i_row += 1
 
 
 if __name__ == "__main__":
