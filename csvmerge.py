@@ -14,20 +14,10 @@ def print_highlighted_cell(row, i_to_highlight, header):
     print("")
 
 
-def main():
-    # Parse user arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i1", metavar="file", help="Input file #1", required=True)
-    parser.add_argument(
-        "-i2", metavar="file", help="Input file #2", required=True)
-    parser.add_argument(
-        "-o",  metavar="file", help="Output file", required=True)
-    parser_args = vars(parser.parse_args())
-
-    with open(parser_args["i1"], mode="r", encoding="utf-8") as inputfile1, \
-         open(parser_args["i2"], mode="r", encoding="utf-8") as inputfile2, \
-         open(parser_args["o"], mode="w", encoding="utf-8") as outputfile:
+def csvmerge(inputfile1_path, inputfile2_path, outputfile_path):
+    with open(inputfile1_path, mode="r", encoding="utf-8") as inputfile1, \
+         open(inputfile2_path, mode="r", encoding="utf-8") as inputfile2, \
+         open(outputfile_path, mode="w", encoding="utf-8") as outputfile:
 
         reader1 = csv.reader(inputfile1)
         reader2 = csv.reader(inputfile2)
@@ -89,4 +79,14 @@ file, q to exit.")
 
 
 if __name__ == "__main__":
-    main()
+    # Parse user arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i1", metavar="file", help="Input file #1", required=True)
+    parser.add_argument(
+        "-i2", metavar="file", help="Input file #2", required=True)
+    parser.add_argument(
+        "-o",  metavar="file", help="Output file", required=True)
+    parser_args = vars(parser.parse_args())
+
+    csvmerge(parser_args["i1"], parser_args["i2"], parser_args["o"])
