@@ -14,7 +14,7 @@ def print_highlighted_cell(row, i_to_highlight, header):
     print("")
 
 
-def csvmerge(inputfile1_path, inputfile2_path, outputfile_path):
+def csvmerge(inputfile1_path, inputfile2_path, outputfile_path, always=0):
     with open(inputfile1_path, mode="r", encoding="utf-8") as inputfile1, \
          open(inputfile2_path, mode="r", encoding="utf-8") as inputfile2, \
          open(outputfile_path, mode="w", encoding="utf-8") as outputfile:
@@ -36,23 +36,29 @@ def csvmerge(inputfile1_path, inputfile2_path, outputfile_path):
             output_row = []
             for (i_col, c1), c2 in zip(enumerate(row1), row2):
                 if c1 != c2:
-                    while True:
-                        print(f"--- Row {i_row + 1} of {tot_rows}, Column \
-{i_col + 1} ---")
-                        print_highlighted_cell(row1, i_col, "[1]")
-                        print_highlighted_cell(row2, i_col, "[2]")
-                        user_input = input("> ")
-                        if user_input == "1":
+                    if always:
+                        if always == 1:
                             output_row.append(c1)
-                            break
-                        elif user_input == "2":
+                        if always == 2:
                             output_row.append(c2)
-                            break
-                        elif user_input == "q":
-                            return
-                        else:
-                            print("Invalid input. Type 1 or 2 to select the \
-file, q to exit.")
+                    else:
+                        while True:
+                            print(f"--- Row {i_row + 1} of {tot_rows}, Column \
+{i_col + 1} ---")
+                            print_highlighted_cell(row1, i_col, "[1]")
+                            print_highlighted_cell(row2, i_col, "[2]")
+                            user_input = input("> ")
+                            if user_input == "1":
+                                output_row.append(c1)
+                                break
+                            elif user_input == "2":
+                                output_row.append(c2)
+                                break
+                            elif user_input == "q":
+                                return
+                            else:
+                                print("Invalid input. Type 1 or 2 to select \
+the file, q to exit.")
                 else:
                     output_row.append(c1)
 
@@ -87,6 +93,11 @@ if __name__ == "__main__":
         "-i2", metavar="file", help="Input file #2", required=True)
     parser.add_argument(
         "-o",  metavar="file", help="Output file", required=True)
+    parser.add_argument(
+        "--always", type=int, default=0, choices=[1, 2],
+        help="File from which always pick")
     parser_args = vars(parser.parse_args())
 
-    csvmerge(parser_args["i1"], parser_args["i2"], parser_args["o"])
+    csvmerge(
+        parser_args["i1"], parser_args["i2"], parser_args["o"],
+        parser_args["always"])
