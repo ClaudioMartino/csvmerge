@@ -67,10 +67,10 @@ def csvmerge(
                     row2_skip.append(row2.pop(i - offset))
 
             output_row = []
-            if row1 and row2:
+            if row1 is not None and row2 is not None:
                 i_col = 0
                 for c1, c2 in zip_longest(row1, row2):
-                    if c1 and c2:
+                    if c1 is not None and c2 is not None:
                         if c1 != c2:
                             if always:
                                 if always == 1:
@@ -98,15 +98,15 @@ select the file, q to exit.")
                         else:
                             output_row.append(c1)  # it's equal to c2
                     else:
-                        if c1:
+                        if c1 is not None:
                             output_row.append(c1)
-                        if c2:
+                        if c2 is not None:
                             output_row.append(c2)
                     i_col += 1
             else:
-                if row1:
+                if row1 is not None:
                     output_row.extend(row1)
-                if row2:
+                if row2 is not None:
                     output_row.extend(row2)
 
             # Add skipped columns on the right

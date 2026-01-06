@@ -26,8 +26,6 @@ def test(i1, i2, ref=None, always=0, skip1=[], skip2=[]):
         raise Exception(f"Error! {i1} vs {i2} != {ref}")
 
 
-# TODO files with empty cells
-
 # - Always x 3
 # -- Table dimensions x 4
 # --- Content x 2
@@ -125,7 +123,6 @@ def main():
     # ---- Skip different columns (columns not in common)
     test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip4_3r_3c_skip3.csv", 1, ['header4'], ['header3'])
     test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip4_3r_3c_err_skip3.csv", 1, ['header4'], ['header3'])
-
     # -- Different number of rows and columns (check both tails)
     # --- Same content
     # ---- Don't skip
@@ -180,6 +177,16 @@ def main():
     test("3r_3c.csv",     "5r_5c_err.csv", "5r_5c_err.csv",  2)
     test("5r_5c_err.csv", "3r_3c.csv",     "5r_5c_err3.csv", 2)
     test("5r_5c.csv",     "3r_3c_err.csv", "5r_5c_err2.csv", 2)
+
+    # - Empty cells tests
+    # -- Same size
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       1)
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c_empty.csv", 2)
+    # -- Different number of rows and columns (check both tails)
+    test("3r_3c.csv", "5r_5c_empty.csv", "3r_3c_5r_5c_empty.csv", 1)
+    test("3r_3c.csv", "5r_5c_empty.csv", "5r_5c_empty.csv",       2)
+    test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             1)
+    test("5r_5c.csv", "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", 2)
 
 
 if __name__ == "__main__":
