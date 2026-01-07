@@ -3,13 +3,16 @@ import argparse
 from itertools import zip_longest
 
 
-def print_highlighted_cell(row, i_to_highlight, header):
+def print_highlighted_cell(row, i_to_highlight, header, color=True):
     print(f"{header} ", end="")
     for i, cell in enumerate(row):
         if cell == "":
             cell = "<empty>"
         if i == i_to_highlight:
-            print(f"\033[91m{cell}\033[00m,", end="")
+            if color:
+                print(f"\033[91m{cell}\033[00m,", end="")
+            else:
+                print(f"**{cell}**,", end="")
         else:
             print(f"{cell},", end="")
     print("")
@@ -30,14 +33,15 @@ def get_indices_cols_to_skip(col_names, header):
 
 
 def csvmerge(
-        in1_path, in2_path, out_path, always=0, skip1=[], skip2=[], dlmtr=","):
+        in1_path, in2_path, out_path, always=0, skip1=[], skip2=[],
+        delimiter=",", nocolor=False):
     with open(in1_path, mode="r", newline="", encoding="utf-8") as infile1, \
          open(in2_path, mode="r", newline="", encoding="utf-8") as infile2, \
          open(out_path, mode="w", newline="", encoding="utf-8") as outfile:
 
-        reader1 = csv.reader(infile1, delimiter=dlmtr)
-        reader2 = csv.reader(infile2, delimiter=dlmtr)
-        writer = csv.writer(outfile, delimiter=dlmtr, lineterminator='\n')
+        reader1 = csv.reader(infile1, delimiter=delimiter)
+        reader2 = csv.reader(infile2, delimiter=delimiter)
+        writer = csv.writer(outfile, delimiter=delimiter, lineterminator='\n')
 
         # Look for indices of the columns to skip
         header1 = next(reader1)
@@ -50,9 +54,9 @@ def csvmerge(
         for row1, row2 in zip(reader1, reader2):
             tot_rows += 1
         infile1.seek(0)
-        reader1 = csv.reader(infile1, delimiter=dlmtr)
+        reader1 = csv.reader(infile1, delimiter=delimiter)
         infile2.seek(0)
-        reader2 = csv.reader(infile2, delimiter=dlmtr)
+        reader2 = csv.reader(infile2, delimiter=delimiter)
 
         i_row = 0
         for row1, row2 in zip_longest(reader1, reader2):
@@ -81,8 +85,10 @@ def csvmerge(
                                 while True:
                                     print(f"--- Row {i_row + 1} of {tot_rows}\
 , Column {i_col + 1} ---")
-                                    print_highlighted_cell(row1, i_col, "[1]")
-                                    print_highlighted_cell(row2, i_col, "[2]")
+                                    print_highlighted_cell(
+                                        row1, i_col, "[1]", not nocolor)
+                                    print_highlighted_cell(
+                                        row2, i_col, "[2]", not nocolor)
                                     user_input = input("> ")
                                     if user_input == "1":
                                         output_row.append(c1)
@@ -143,10 +149,13 @@ output file, to the right")
     parser.add_argument(
         "--delimiter", metavar="char", default=",", help="Character used to \
 separate the fields in the files")
+    parser.add_argument("--nocolor", action="store_true", help="Use asterisks \
+to highlight the differences instead of ANSI escape sequences colors")
+
     parser_args = vars(parser.parse_args())
 
     # Run main function
     csvmerge(
         parser_args["i1"], parser_args["i2"], parser_args["o"],
         parser_args["always"], parser_args["skip1"], parser_args["skip2"],
-        parser_args["delimiter"])
+        parser_args["delimiter"], parser_args["nocolor"])
