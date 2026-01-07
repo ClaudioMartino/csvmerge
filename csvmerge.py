@@ -3,6 +3,14 @@ import argparse
 from itertools import zip_longest
 
 
+def standard_diff(c1, c2):
+    return c1 != c2
+
+
+def case_insensitive_diff(c1, c2):
+    return c1.casefold() != c2.casefold()
+
+
 def print_highlighted_cell(row, i_to_highlight, header, color=True):
     # Print header at the beginning
     print(f"{header} ", end="")
@@ -52,7 +60,13 @@ def pop_elements_from_list(list_, indices, removed=None):
 
 def csvmerge(
         in1_path, in2_path, out_path, always=0, skip1=[], skip2=[],
-        delimiter=",", nocolor=False):
+        delimiter=",", caseinsensitive=False, nocolor=False):
+    # Set the compare function
+    if caseinsensitive:
+        are_different = case_insensitive_diff
+    else:
+        are_different = standard_diff
+
     with open(in1_path, mode="r", newline="", encoding="utf-8") as infile1, \
          open(in2_path, mode="r", newline="", encoding="utf-8") as infile2, \
          open(out_path, mode="w", newline="", encoding="utf-8") as outfile:
@@ -72,14 +86,14 @@ def csvmerge(
         pop_elements_from_list(header1, col_to_skip_indices1)
         pop_elements_from_list(header2, col_to_skip_indices2)
         for c1, c2 in zip(header1, header2):
-            if c1 != c2:
+            if are_different(c1, c2):
                 tot_diff += 1
         tot_rows = 1
         for row1, row2 in zip(reader1, reader2):
             pop_elements_from_list(row1, col_to_skip_indices1)
             pop_elements_from_list(row2, col_to_skip_indices2)
             for c1, c2 in zip(row1, row2):
-                if c1 != c2:
+                if are_different(c1, c2):
                     tot_diff += 1
             tot_rows += 1
 
@@ -104,7 +118,7 @@ def csvmerge(
                 i_col = 0
                 for c1, c2 in zip_longest(row1, row2):
                     if c1 is not None and c2 is not None:
-                        if c1 != c2:
+                        if are_different(c1, c2):
                             diff_cnt += 1
                             if always:
                                 if always == 1:
@@ -132,7 +146,7 @@ def csvmerge(
                                         print("Invalid input. Type 1 or 2 to \
 select the file, q to exit.")
                         else:
-                            output_row.append(c1)  # it's equal to c2
+                            output_row.append(c1)  # == c2 (if case sensitive)
                     else:
                         if c1 is not None:
                             output_row.append(c1)
@@ -179,8 +193,13 @@ output file, to the right")
     parser.add_argument(
         "--delimiter", metavar="char", default=",", help="Character used to \
 separate the fields in the files")
-    parser.add_argument("--nocolor", action="store_true", help="Use asterisks \
-to highlight the differences instead of ANSI escape sequences colors")
+    parser.add_argument(
+        "--caseinsensitive", action="store_true", help="Use case-insensitive \
+comparisons. If two values differ only by case, the value from file #1 will \
+be selected")
+    parser.add_argument(
+        "--nocolor", action="store_true", help="Use asterisks to highlight \
+the differences instead of ANSI escape sequences colors")
 
     parser_args = vars(parser.parse_args())
 
@@ -188,4 +207,5 @@ to highlight the differences instead of ANSI escape sequences colors")
     csvmerge(
         parser_args["i1"], parser_args["i2"], parser_args["o"],
         parser_args["always"], parser_args["skip1"], parser_args["skip2"],
-        parser_args["delimiter"], parser_args["nocolor"])
+        parser_args["delimiter"], parser_args["caseinsensitive"],
+        parser_args["nocolor"])

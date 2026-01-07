@@ -8,22 +8,23 @@ def test(i1, i2, ref=None, always=0, skip1=[], skip2=[]):
     error = False
     tmp_output = "out.csv"
 
-    # Run function
-    csvmerge.csvmerge(i1, i2, tmp_output, always, skip1, skip2)
+    for caseinsensitive in [False, True]:
+        # Run function
+        csvmerge.csvmerge(i1, i2, tmp_output, always, skip1, skip2, ",", caseinsensitive)
 
-    # Check reference file
-    if ref:
-        with open(tmp_output) as outputfile:
-            with open(ref) as referencefile:
-                if outputfile.read() != referencefile.read():
-                    error = True
+        # Check reference file
+        if ref:
+            with open(tmp_output) as outputfile:
+                with open(ref) as referencefile:
+                    if outputfile.read() != referencefile.read():
+                        error = True
 
-    # Remove output file
-    os.remove(tmp_output)
+        # Remove output file
+        os.remove(tmp_output)
 
-    # Raise exception if error
-    if error:
-        raise Exception(f"Error! {i1} vs {i2} != {ref}")
+        # Raise exception if error
+        if error:
+            raise Exception(f"Error! {i1} vs {i2} != {ref} (caseinsensitive: {caseinsensitive})")
 
 
 def test_pop(in_list, indices, ref, removed_ref):
