@@ -26,12 +26,23 @@ def test(i1, i2, ref=None, always=0, skip1=[], skip2=[]):
         raise Exception(f"Error! {i1} vs {i2} != {ref}")
 
 
-# - Always x 3
-# -- Table dimensions x 4
-# --- Content x 2
-# ---- Skip columns x 4
+def test_pop(in_list, indices, ref, removed_ref):
+    in_list_copy = in_list.copy()
+    removed = []
+    csvmerge.pop_elements_from_list(in_list, indices, removed)
+    if in_list != ref:
+        raise Exception(f"Error! {in_list_copy} / {indices} -> list {in_list}, expected {ref}")
+    if removed != removed_ref:
+        raise Exception(f"Error! {in_list_copy} / {indices} -> removed {removed}, expected {removed_ref}")
+
 
 def main():
+    # Main tests:
+    # - Always x 3
+    # -- Table dimensions x 4
+    # --- Content x 2
+    # ---- Skip columns x 4
+
     # - No always option (same content only, no decision taken)
     # -- Same size
     # --- Same content
@@ -187,6 +198,16 @@ def main():
     test("3r_3c.csv", "5r_5c_empty.csv", "5r_5c_empty.csv",       2)
     test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             1)
     test("5r_5c.csv", "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", 2)
+
+    # Tests for pop_elements_from_list function:
+    test_pop(['a', 'b', 'c', 'd', 'e'], [], ['a', 'b', 'c', 'd', 'e'], [])
+    test_pop(['a', 'b', 'c', 'd', 'e'], [0], ['b', 'c', 'd', 'e'], ['a'])
+    test_pop(['a', 'b', 'c', 'd', 'e'], [1, 3], ['a', 'c', 'e'], ['b', 'd'])
+    test_pop(['a', 'b', 'c', 'd', 'e'], [0, 2, 4], ['b', 'd'], ['a', 'c', 'e'])
+    test_pop(['a', 'b', 'c', 'd', 'e'], [0, 1, 2, 3, 4], [], ['a', 'b', 'c', 'd', 'e'])
+    test_pop(['a'], [0], [], ['a'])
+    test_pop(['a'], [], ['a'], [])
+    test_pop([], [], [], [])
 
 
 if __name__ == "__main__":

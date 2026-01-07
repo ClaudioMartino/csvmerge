@@ -43,6 +43,13 @@ def get_indices_cols_to_skip(col_names, header):
     return col_to_skip_indices
 
 
+def pop_elements_from_list(list_, indices, removed=None):
+    for offset, i in enumerate(indices):
+        element = list_.pop(i - offset)
+        if removed is not None:
+            removed.append(element)
+
+
 def csvmerge(
         in1_path, in2_path, out_path, always=0, skip1=[], skip2=[],
         delimiter=",", nocolor=False):
@@ -60,26 +67,37 @@ def csvmerge(
         header2 = next(reader2)
         col_to_skip_indices2 = get_indices_cols_to_skip(skip2, header2)
 
-        # Count total number of rows
+        # Count total number of differences and rows
+        tot_diff = 0
+        pop_elements_from_list(header1, col_to_skip_indices1)
+        pop_elements_from_list(header2, col_to_skip_indices2)
+        for c1, c2 in zip(header1, header2):
+            if c1 != c2:
+                tot_diff += 1
         tot_rows = 1
         for row1, row2 in zip(reader1, reader2):
+            pop_elements_from_list(row1, col_to_skip_indices1)
+            pop_elements_from_list(row2, col_to_skip_indices2)
+            for c1, c2 in zip(row1, row2):
+                if c1 != c2:
+                    tot_diff += 1
             tot_rows += 1
+
         infile1.seek(0)
         reader1 = csv.reader(infile1, delimiter=delimiter)
         infile2.seek(0)
         reader2 = csv.reader(infile2, delimiter=delimiter)
 
+        diff_cnt = 0
         i_row = 0
         for row1, row2 in zip_longest(reader1, reader2):
             # Remove skipped columns
             row1_skip = []
             if row1:
-                for offset, i in enumerate(col_to_skip_indices1):
-                    row1_skip.append(row1.pop(i - offset))
+                pop_elements_from_list(row1, col_to_skip_indices1, row1_skip)
             row2_skip = []
             if row2:
-                for offset, i in enumerate(col_to_skip_indices2):
-                    row2_skip.append(row2.pop(i - offset))
+                pop_elements_from_list(row2, col_to_skip_indices2, row2_skip)
 
             output_row = []
             if row1 is not None and row2 is not None:
@@ -87,6 +105,7 @@ def csvmerge(
                 for c1, c2 in zip_longest(row1, row2):
                     if c1 is not None and c2 is not None:
                         if c1 != c2:
+                            diff_cnt += 1
                             if always:
                                 if always == 1:
                                     output_row.append(c1)
@@ -94,8 +113,8 @@ def csvmerge(
                                     output_row.append(c2)
                             else:
                                 while True:
-                                    print(f"--- Row {i_row + 1} of {tot_rows}\
-, Column {i_col + 1} ---")
+                                    print(f"({diff_cnt}/{tot_diff}) Row \
+{i_row + 1} of {tot_rows}, Column {i_col + 1}")
                                     print_highlighted_cell(
                                         row1, i_col, "[1]", not nocolor)
                                     print_highlighted_cell(
