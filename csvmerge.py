@@ -4,17 +4,28 @@ from itertools import zip_longest
 
 
 def print_highlighted_cell(row, i_to_highlight, header, color=True):
+    # Print header at the beginning
     print(f"{header} ", end="")
+
     for i, cell in enumerate(row):
+        # Handle empty cells
         if cell == "":
             cell = "<empty>"
+
+        # Highlight the selected cell
         if i == i_to_highlight:
             if color:
-                print(f"\033[91m{cell}\033[00m,", end="")
+                print(f"\033[91m{cell}\033[00m", end="")
             else:
-                print(f"**{cell}**,", end="")
+                print(f"**{cell}**", end="")
         else:
-            print(f"{cell},", end="")
+            print(f"{cell}", end="")
+
+        # Adding a comma to separate elements
+        if i != len(row) - 1:
+            print(",", end="")
+
+    # Carriage return at the end
     print("")
 
 
