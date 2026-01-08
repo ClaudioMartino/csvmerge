@@ -58,8 +58,18 @@ def pop_elements_from_list(list_, indices, removed=None):
             removed.append(element)
 
 
+def get_longest_shortest(string1, string2):
+    if len(string1) >= len(string2):
+        longest = string1
+        shortest = string2
+    else:
+        longest = string2
+        shortest = string1
+    return longest, shortest
+
+
 def csvmerge(
-        in1_path, in2_path, out_path, always=0, skip1=[], skip2=[],
+        in1_path, in2_path, out_path, always="", skip1=[], skip2=[],
         delimiter=",", caseinsensitive=False, nocolor=False):
     # Set the compare function
     if caseinsensitive:
@@ -121,10 +131,19 @@ def csvmerge(
                         if are_different(c1, c2):
                             diff_cnt += 1
                             if always:
-                                if always == 1:
+                                if always == "1":
                                     output_row.append(c1)
-                                if always == 2:
+                                elif always == "2":
                                     output_row.append(c2)
+                                else:
+                                    longest, shortest = get_longest_shortest(
+                                                            c1, c2)
+                                    if always == "l":
+                                        output_row.append(longest)
+                                    elif always == "s":
+                                        output_row.append(shortest)
+                                    else:
+                                        raise Exception("Invalid 'always'.")
                             else:
                                 while True:
                                     print(f"({diff_cnt}/{tot_diff}) Row \
@@ -180,8 +199,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-o",  metavar="file", help="Output file", required=True)
     parser.add_argument(
-        "--always", type=int, default=0, choices=[1, 2],
-        help="File from which always pick")
+        "--always", default="", choices=["1", "2", "l", "s"], help="Adopt \
+automatically the same decision for each conflict: '1' to always pick the \
+value from file #1, '2' to pick the value from file #2, 'l' to pick the \
+longest value, 's' to pick the shortest value.")
     parser.add_argument(
         "--skip1", metavar="cn", nargs="+", help="Names of the columns to \
 remove from file #1 before the comparison. The columns are added back to the \
