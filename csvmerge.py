@@ -71,6 +71,10 @@ def get_longest_shortest(string1, string2):
 def csvmerge(
         in1_path, in2_path, out_path, always="", skip1=[], skip2=[],
         delimiter=",", caseinsensitive=False, nocolor=False):
+    choices1 = []
+    choices2 = []
+    asterisks = ""
+
     # Set the compare function
     if caseinsensitive:
         are_different = case_insensitive_diff
@@ -147,23 +151,44 @@ def csvmerge(
                             else:
                                 while True:
                                     print(f"({diff_cnt}/{tot_diff}) Row \
-{i_row + 1} of {tot_rows}, Column {i_col + 1}")
+{i_row + 1} of {tot_rows}, Column {i_col + 1} {asterisks}")
                                     print_highlighted_cell(
                                         row1, i_col, "[1]", not nocolor)
                                     print_highlighted_cell(
                                         row2, i_col, "[2]", not nocolor)
-                                    user_input = input("> ")
-                                    if user_input == "1":
+                                    if (c1, c2) in choices1:
                                         output_row.append(c1)
+                                        print("> 1!")
                                         break
-                                    elif user_input == "2":
+                                    elif (c1, c2) in choices2:
                                         output_row.append(c2)
+                                        print("> 2!")
                                         break
-                                    elif user_input == "q":
-                                        return
                                     else:
-                                        print("Invalid input. Type 1 or 2 to \
-select the file, q to exit.")
+                                        user_input = input("> ")
+                                        if user_input == "1":
+                                            output_row.append(c1)
+                                            break
+                                        elif user_input == "1+":
+                                            output_row.append(c1)
+                                            choices1.append((c1, c2))
+                                            asterisks += "*"
+                                            print(f"{c1} from now on.")
+                                            break
+                                        elif user_input == "2":
+                                            output_row.append(c2)
+                                            break
+                                        elif user_input == "2+":
+                                            output_row.append(c2)
+                                            choices2.append((c1, c2))
+                                            asterisks += "*"
+                                            print(f"{c2} from now on.")
+                                            break
+                                        elif user_input == "q":
+                                            return
+                                        else:
+                                            print("Invalid input. Type 1 (or \
+1+) or 2 (or 2+) to select the file, q to exit.")
                         else:
                             output_row.append(c1)  # == c2 (if case sensitive)
                     else:

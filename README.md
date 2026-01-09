@@ -6,9 +6,15 @@ This is an interactive merge tool specifically designed for .csv files and writt
 
 ## Basic usage
 
+Run the script as:
+
 ```
 python3 csvmerge.py -i1 <input-file-1> -i2 <input-file-2> -o <output-file>
 ```
+
+In case of conflict the user is prompted to select the source file: they need to press `1` for file n. 1 or `2` for file n. 2, and confirm the choice with `<Enter>`.
+
+If the user realizes that a specific conflict is going to recur consistently, they can automate their decision by entering `1+` or `2+`. This adds the choice to a list of automatic responses, preventing future prompts for that conflict. A series of asterisks on the screen indicates the total number of automatic choices that have been saved.
 
 ## Other options
 
