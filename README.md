@@ -25,8 +25,9 @@ If the user realizes that a specific conflict is going to recur consistently, th
   * `--always s` to always pick the shortest value. If the two values have the same length, the value from file n. 1 will be selected.
 * Use `--skip1 <column-name>` and `--skip2 <column-name>` to remove the specified columns from the comparison. You can specify multiple columns for both files. Removed columns are added back to the output file, on the right, file n. 1 before file n. 2. This option is useful when the two files share some, but not all, columns.
 * Use `--delimiter <char>` to specify the character used to separate the values in the .csv files. It defaults to `,`.
-* Use `--caseinsensitive` to perform case-insensitive comparisons. If two values differ only by case, the value from file n. 1 will be selected.
-* Use `--nocolor` to highlight the differences using asterisks rather than red ANSI formatting.
+* Use `--skip-empty` to ignore empty values. If only one of the conflicting cells is empty, the value of the other cell will be automatically selected.
+* Use `--case-insensitive` to perform case-insensitive comparisons. If two values differ only by case, the value from file n. 1 will be selected.
+* Use `--no-color` to highlight the differences using asterisks rather than red ANSI formatting.
 
 All these options can be displayed by running the helper with `-h`.
 

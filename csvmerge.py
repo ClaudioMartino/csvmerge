@@ -70,13 +70,14 @@ def get_longest_shortest(string1, string2):
 
 def csvmerge(
         in1_path, in2_path, out_path, always="", skip1=[], skip2=[],
-        delimiter=",", caseinsensitive=False, nocolor=False):
+        delimiter=",", case_insensitive=False, skip_empty=False,
+        nocolor=False):
     choices1 = []
     choices2 = []
     asterisks = ""
 
     # Set the compare function
-    if caseinsensitive:
+    if case_insensitive:
         are_different = case_insensitive_diff
     else:
         are_different = standard_diff
@@ -101,14 +102,17 @@ def csvmerge(
         pop_elements_from_list(header2, col_to_skip_indices2)
         for c1, c2 in zip(header1, header2):
             if are_different(c1, c2):
-                tot_diff += 1
+                if (not skip_empty) or (skip_empty and c1 != "" and c2 != ""):
+                    tot_diff += 1
         tot_rows = 1
         for row1, row2 in zip(reader1, reader2):
             pop_elements_from_list(row1, col_to_skip_indices1)
             pop_elements_from_list(row2, col_to_skip_indices2)
             for c1, c2 in zip(row1, row2):
                 if are_different(c1, c2):
-                    tot_diff += 1
+                    if (not skip_empty) or (
+                            skip_empty and c1 != "" and c2 != ""):
+                        tot_diff += 1
             tot_rows += 1
 
         infile1.seek(0)
@@ -129,75 +133,90 @@ def csvmerge(
 
             output_row = []
             if row1 is not None and row2 is not None:
+                # Both files have one line
                 i_col = 0
                 for c1, c2 in zip_longest(row1, row2):
                     if c1 is not None and c2 is not None:
+                        # Both rows have one cell
                         if are_different(c1, c2):
-                            diff_cnt += 1
-                            if always:
-                                if always == "1":
-                                    output_row.append(c1)
-                                elif always == "2":
-                                    output_row.append(c2)
-                                else:
-                                    longest, shortest = get_longest_shortest(
-                                                            c1, c2)
-                                    if always == "l":
-                                        output_row.append(longest)
-                                    elif always == "s":
-                                        output_row.append(shortest)
-                                    else:
-                                        raise Exception("Invalid 'always'.")
-                            else:
-                                while True:
-                                    print(f"({diff_cnt}/{tot_diff}) Row \
-{i_row + 1} of {tot_rows}, Column {i_col + 1} {asterisks}")
-                                    print_highlighted_cell(
-                                        row1, i_col, "[1]", not nocolor)
-                                    print_highlighted_cell(
-                                        row2, i_col, "[2]", not nocolor)
-                                    if (c1, c2) in choices1:
+                            # Values are different
+                            if (not skip_empty) or \
+                               (skip_empty and c1 != "" and c2 != ""):
+                                diff_cnt += 1
+                                if always:
+                                    # Automatic execution
+                                    if always == "1":
                                         output_row.append(c1)
-                                        print("> 1!")
-                                        break
-                                    elif (c1, c2) in choices2:
+                                    elif always == "2":
                                         output_row.append(c2)
-                                        print("> 2!")
-                                        break
                                     else:
-                                        user_input = input("> ")
-                                        if user_input == "1":
-                                            output_row.append(c1)
-                                            break
-                                        elif user_input == "1+":
-                                            output_row.append(c1)
-                                            choices1.append((c1, c2))
-                                            asterisks += "*"
-                                            print(f"{c1} from now on.")
-                                            break
-                                        elif user_input == "2":
-                                            output_row.append(c2)
-                                            break
-                                        elif user_input == "2+":
-                                            output_row.append(c2)
-                                            choices2.append((c1, c2))
-                                            asterisks += "*"
-                                            print(f"{c2} from now on.")
-                                            break
-                                        elif user_input == "q":
-                                            return
+                                        longest, shortest = \
+                                            get_longest_shortest(c1, c2)
+                                        if always == "l":
+                                            output_row.append(longest)
+                                        elif always == "s":
+                                            output_row.append(shortest)
                                         else:
-                                            print("Invalid input. Type 1 (or \
-1+) or 2 (or 2+) to select the file, q to exit.")
+                                            raise Exception(
+                                                "Invalid 'always' option.")
+                                else:
+                                    # Interactive execution
+                                    while True:
+                                        print(f"({diff_cnt}/{tot_diff}) Row \
+{i_row + 1} of {tot_rows}, Column {i_col + 1} {asterisks}")
+                                        print_highlighted_cell(
+                                            row1, i_col, "[1]", not nocolor)
+                                        print_highlighted_cell(
+                                            row2, i_col, "[2]", not nocolor)
+                                        if (c1, c2) in choices1:
+                                            output_row.append(c1)
+                                            print("> 1!")
+                                            break
+                                        elif (c1, c2) in choices2:
+                                            output_row.append(c2)
+                                            print("> 2!")
+                                            break
+                                        else:
+                                            user_input = input("> ")
+                                            if user_input == "1":
+                                                output_row.append(c1)
+                                                break
+                                            elif user_input == "1+":
+                                                output_row.append(c1)
+                                                choices1.append((c1, c2))
+                                                asterisks += "*"
+                                                print(f"{c1} from now on.")
+                                                break
+                                            elif user_input == "2":
+                                                output_row.append(c2)
+                                                break
+                                            elif user_input == "2+":
+                                                output_row.append(c2)
+                                                choices2.append((c1, c2))
+                                                asterisks += "*"
+                                                print(f"{c2} from now on.")
+                                                break
+                                            elif user_input == "q":
+                                                return
+                                            else:
+                                                print("Invalid input. Type 1 \
+(or 1+) or 2 (or 2+) to select the file, q to exit.")
+                            elif skip_empty and c1 != "" and c2 == "":
+                                output_row.append(c1)
+                            elif skip_empty and c1 == "" and c2 != "":
+                                output_row.append(c2)
                         else:
-                            output_row.append(c1)  # == c2 (if case sensitive)
+                            # Values are equal (case sensitive)
+                            output_row.append(c1)
                     else:
+                        # Remaining cells
                         if c1 is not None:
                             output_row.append(c1)
                         if c2 is not None:
                             output_row.append(c2)
                     i_col += 1
             else:
+                # Remaining rows
                 if row1 is not None:
                     output_row.extend(row1)
                 if row2 is not None:
@@ -239,12 +258,15 @@ output file, to the right")
     parser.add_argument(
         "--delimiter", metavar="char", default=",", help="Character used to \
 separate the fields in the files")
+    parser.add_argument("--skip-empty", action="store_true", help="Ignore \
+empty values. If only one of the conflicting cells is empty, the value of the \
+other cell is automatically selected")
     parser.add_argument(
-        "--caseinsensitive", action="store_true", help="Use case-insensitive \
+        "--case-insensitive", action="store_true", help="Use case insensitive \
 comparisons. If two values differ only by case, the value from file #1 will \
 be selected")
     parser.add_argument(
-        "--nocolor", action="store_true", help="Use asterisks to highlight \
+        "--no-color", action="store_true", help="Use asterisks to highlight \
 the differences instead of ANSI escape sequences colors")
 
     parser_args = vars(parser.parse_args())
@@ -253,5 +275,5 @@ the differences instead of ANSI escape sequences colors")
     csvmerge(
         parser_args["i1"], parser_args["i2"], parser_args["o"],
         parser_args["always"], parser_args["skip1"], parser_args["skip2"],
-        parser_args["delimiter"], parser_args["caseinsensitive"],
-        parser_args["nocolor"])
+        parser_args["delimiter"], parser_args["case_insensitive"],
+        parser_args["skip_empty"], parser_args["no_color"])

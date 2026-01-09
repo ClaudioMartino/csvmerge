@@ -4,13 +4,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import csvmerge  # import ../csvmerge.py
 
 
-def test(i1, i2, ref=None, always="", skip1=[], skip2=[]):
+def test(i1, i2, ref=None, always="", skip1=[], skip2=[], skip_empty=False):
     error = False
     tmp_output = "out.csv"
 
-    for caseinsensitive in [False, True]:
+    for case_insensitive in [False, True]:
         # Run function
-        csvmerge.csvmerge(i1, i2, tmp_output, always, skip1, skip2, ",", caseinsensitive)
+        csvmerge.csvmerge(i1, i2, tmp_output, always, skip1, skip2, ",", case_insensitive, skip_empty)
 
         # Check reference file
         if ref:
@@ -24,7 +24,7 @@ def test(i1, i2, ref=None, always="", skip1=[], skip2=[]):
 
         # Raise exception if error
         if error:
-            raise Exception(f"Error! {i1} vs {i2} != {ref} (always: {always}, caseinsensitive: {caseinsensitive})")
+            raise Exception(f"Error! {i1} vs {i2} != {ref} (always: {always}, skip empty: {skip_empty}, case insensitive: {case_insensitive})")
 
 
 def test_pop(in_list, indices, ref, removed_ref):
@@ -47,6 +47,7 @@ def test_longest_shortest(string1, string2, l_ref, s_ref):
 
 def main():
     # Main tests:
+
     # - Always x 5
     # -- Table dimensions x 4
     # --- Content x 2
@@ -279,15 +280,20 @@ def main():
     test("5r_5c_err.csv", "3r_3c.csv",     "5r_5c_err.csv",  "l")
     test("5r_5c.csv",     "3r_3c_err.csv", "5r_5c.csv",      "s")
 
-    # - Empty cells tests
-    # -- Same size
+    # Empty cells tests
+    # - Same size
     test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "1")
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "l")
     test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c_empty.csv", "2")
-    # -- Different number of rows and columns (check both tails)
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c_empty.csv", "s")
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "", [], [], True)
+    test("3r_3c_empty.csv", "3r_3c.csv", "3r_3c.csv",       "", [], [], True)
+    # - Different number of rows and columns
     test("3r_3c.csv", "5r_5c_empty.csv", "3r_3c_5r_5c_empty.csv", "1")
     test("3r_3c.csv", "5r_5c_empty.csv", "5r_5c_empty.csv",       "2")
     test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             "1")
     test("5r_5c.csv", "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", "2")
+    test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             "", [], [], True)
 
     # Tests for pop_elements_from_list function:
     test_pop(['a', 'b', 'c', 'd', 'e'], [], ['a', 'b', 'c', 'd', 'e'], [])
