@@ -1,6 +1,7 @@
 import csv
 import argparse
 from itertools import zip_longest
+import logging
 
 
 def standard_diff(c1, c2):
@@ -12,8 +13,8 @@ def case_insensitive_diff(c1, c2):
 
 
 def print_highlighted_cell(row, i_to_highlight, header, color=True):
-    # Print header at the beginning
-    print(f"{header} ", end="")
+    # Use header at the beginning
+    message = f"{header} "
 
     for i, cell in enumerate(row):
         # Handle empty cells
@@ -23,18 +24,18 @@ def print_highlighted_cell(row, i_to_highlight, header, color=True):
         # Highlight the selected cell
         if i == i_to_highlight:
             if color:
-                print(f"\033[91m{cell}\033[00m", end="")
+                message += f"\033[91m{cell}\033[00m"
             else:
-                print(f"**{cell}**", end="")
+                message += f"**{cell}**"
         else:
-            print(f"{cell}", end="")
+            message += f"{cell}"
 
         # Adding a comma to separate elements
         if i != len(row) - 1:
-            print(",", end="")
+            message += ","
 
-    # Carriage return at the end
-    print("")
+    # Print complete message
+    logging.info(message)
 
 
 def get_indices_cols_to_skip(col_names, header):
@@ -44,7 +45,7 @@ def get_indices_cols_to_skip(col_names, header):
             try:
                 col_index = header.index(col_to_skip)
             except ValueError:
-                print(f"'{col_to_skip}' doesn't exist in file 1")
+                logging.warning(f"'{col_to_skip}' doesn't exist in file 1")
                 continue
             col_to_skip_indices.append(col_index)
     col_to_skip_indices.sort()
@@ -128,8 +129,8 @@ def csvmerge(
 
         # Print the info and exit when requested
         tot_cols = min(len(header1), len(header2))
-        print(f"{tot_diff} conflicts for {tot_rows} rows and {tot_cols} \
-columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
+        logging.debug(f"{tot_diff} conflicts for {tot_rows} rows and \
+{tot_cols} columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
         if info_only:
             return
 
@@ -184,7 +185,8 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
                                 else:
                                     # Interactive execution
                                     while True:
-                                        print(f"({diff_cnt}/{tot_diff}) Row \
+                                        logging.info(
+                                            f"({diff_cnt}/{tot_diff}) Row \
 {i_row + 1} of {tot_rows}, column {i_col + 1} {asterisks}")
                                         print_highlighted_cell(
                                             row1, i_col, "[1]", not nocolor)
@@ -192,11 +194,11 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
                                             row2, i_col, "[2]", not nocolor)
                                         if (c1, c2) in choices1:
                                             output_row.append(c1)
-                                            print("> 1!")
+                                            logging.info("> 1!")
                                             break
                                         elif (c1, c2) in choices2:
                                             output_row.append(c2)
-                                            print("> 2!")
+                                            logging.info("> 2!")
                                             break
                                         else:
                                             user_input = input("> ")
@@ -207,7 +209,8 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
                                                 output_row.append(c1)
                                                 choices1.append((c1, c2))
                                                 asterisks += "*"
-                                                print(f"{c1} from now on.")
+                                                logging.info(
+                                                    f"{c1} from now on.")
                                                 break
                                             elif user_input == "2":
                                                 output_row.append(c2)
@@ -216,12 +219,14 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
                                                 output_row.append(c2)
                                                 choices2.append((c1, c2))
                                                 asterisks += "*"
-                                                print(f"{c2} from now on.")
+                                                logging.info(
+                                                    f"{c2} from now on.")
                                                 break
                                             elif user_input == "q":
                                                 return
                                             else:
-                                                print("Invalid input. Type 1 \
+                                                logging.info(
+                                                    "Invalid input. Type 1 \
 (or 1+) or 2 (or 2+) to select the file, q to exit.")
                             elif skip_empty and c1 != "" and c2 == "":
                                 output_row.append(c1)
@@ -258,48 +263,59 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
 if __name__ == "__main__":
     # Parse user arguments
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument(
-        "-h", "--help", action="help", help="Print this help message and exit")
-    parser.add_argument(
+    general = parser.add_argument_group("General options")
+    general.add_argument(
         "-i1", metavar="file", help="Input file #1", required=True)
-    parser.add_argument(
+    general.add_argument(
         "-i2", metavar="file", help="Input file #2", required=True)
-    parser.add_argument(
+    general.add_argument(
         "-o",  metavar="file", help="Output file", required=True)
-    parser.add_argument(
+    general.add_argument(
         "--always", default="", choices=["1", "2", "l", "s"], help="Adopt \
 automatically the same decision for each conflict: '1' to always pick the \
 value from file #1, '2' to pick the value from file #2, 'l' to pick the \
 longest value, 's' to pick the shortest value.")
-    parser.add_argument(
+    general.add_argument(
         "--sort", action="store_true", help="Sort alphabetically the columns \
 of the input files")
-    parser.add_argument(
+    general.add_argument(
         "--skip1", metavar="cn", nargs="+", help="Names of the columns to \
 remove from file #1 before the comparison. The columns are added back to the \
 output file, to the right")
-    parser.add_argument(
+    general.add_argument(
         "--skip2", metavar="cn", nargs="+", help="Names of the columns to \
 remove from file #2 before the comparison. The columns are added back to the \
 output file, to the right")
-    parser.add_argument(
+    general.add_argument(
         "--delimiter", metavar="char", default=",", help="Character used to \
 separate the fields in the files")
-    parser.add_argument("--skip-empty", action="store_true", help="Ignore \
+    general.add_argument("--skip-empty", action="store_true", help="Ignore \
 empty values. If only one of the conflicting cells is empty, the value of the \
 other cell is automatically selected")
-    parser.add_argument(
+    general.add_argument(
         "--case-insensitive", action="store_true", help="Use case insensitive \
 comparisons. If two values differ only by case, the value from file #1 will \
 be selected")
-    parser.add_argument(
+    general.add_argument(
         "--info", action="store_true", help="Print the information about the \
 input files and exit")
-    parser.add_argument(
+    general.add_argument(
+        "-h", "--help", action="help", help="Print this help message and exit")
+
+    logging_arg = parser.add_argument_group("Logging options")
+    logging_arg.add_argument(
+        "-q", "--quiet", default=logging.DEBUG, action="store_const",
+        dest="logging_level", const=logging.INFO,
+        help="Activate quiet mode")
+    logging_arg.add_argument(
         "--no-color", action="store_true", help="Use asterisks to highlight \
-the differences instead of ANSI escape sequences colors")
+the differences instead of red (ANSI escape sequences)")
 
     parser_args = vars(parser.parse_args())
+
+    # Configure logger with user defined logging level
+    logging.basicConfig(
+        level=parser_args["logging_level"], format="%(message)s")
 
     # Run main function
     csvmerge(

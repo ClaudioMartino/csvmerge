@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import csvmerge  # import ../csvmerge.py
+import logging
 
 
 def test(i1, i2, ref=None, always="", sort_cols_list=[False, True], skip1=[], skip2=[], skip_empty=False):
@@ -47,6 +48,9 @@ def test_longest_shortest(string1, string2, l_ref, s_ref):
 
 
 def main():
+    # Set logger to quiet mode
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     # Main tests:
 
     # - Always x 5

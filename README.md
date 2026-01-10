@@ -29,6 +29,7 @@ If the user realizes that a specific conflict is going to recur consistently, th
 * Use `--skip-empty` to ignore empty values. If only one of the conflicting cells is empty, the value of the other cell will be automatically selected.
 * Use `--case-insensitive` to perform case-insensitive comparisons. If two values differ only by case, the value from file n. 1 will be selected.
 * Use `--info` to display the information about the input files and exit.
+* Use `-q` to activate quiet mode and skip the initial information log.
 * Use `--no-color` to highlight the differences using asterisks rather than red ANSI formatting.
 
 All these options can be displayed by running the helper with `-h`.
