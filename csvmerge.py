@@ -69,8 +69,8 @@ def get_longest_shortest(string1, string2):
 
 
 def csvmerge(
-        in1_path, in2_path, out_path, always="", skip1=[], skip2=[],
-        delimiter=",", case_insensitive=False, skip_empty=False,
+        in1, in2, out, always="", sort_cols=False, skip1=[],
+        skip2=[], delimiter=",", case_insensitive=False, skip_empty=False,
         info_only=False, nocolor=False):
     choices1 = []
     choices2 = []
@@ -82,32 +82,43 @@ def csvmerge(
     else:
         are_different = standard_diff
 
-    with open(in1_path, mode="r", newline="", encoding="utf-8") as infile1, \
-         open(in2_path, mode="r", newline="", encoding="utf-8") as infile2, \
-         open(out_path, mode="w", newline="", encoding="utf-8") as outfile:
+    with open(in1, mode="r", newline="", encoding="utf-8-sig") as infile1, \
+         open(in2, mode="r", newline="", encoding="utf-8-sig") as infile2, \
+         open(out, mode="w", newline="", encoding="utf-8") as outfile:
 
         reader1 = csv.reader(infile1, delimiter=delimiter)
         reader2 = csv.reader(infile2, delimiter=delimiter)
         writer = csv.writer(outfile, delimiter=delimiter, lineterminator='\n')
 
-        # Look for indices of the columns to skip
+        # Look for the indices of the columns to skip
         header1 = next(reader1)
         col_to_skip_indices1 = get_indices_cols_to_skip(skip1, header1)
         header2 = next(reader2)
         col_to_skip_indices2 = get_indices_cols_to_skip(skip2, header2)
 
-        # Count total number of differences and rows
+        # Get sorted column indices (after pop)
+        if sort_cols:
+            pop_elements_from_list(header1, col_to_skip_indices1)
+            sorted_col1 = sorted(list(enumerate(header1)), key=lambda x: x[1])
+            sorted_indices1 = [idx for idx, _ in sorted_col1]
+            pop_elements_from_list(header2, col_to_skip_indices2)
+            sorted_col2 = sorted(list(enumerate(header2)), key=lambda x: x[1])
+            sorted_indices2 = [idx for idx, _ in sorted_col2]
+
+        # Count conflict and rows
         tot_diff = 0
-        pop_elements_from_list(header1, col_to_skip_indices1)
-        pop_elements_from_list(header2, col_to_skip_indices2)
-        for c1, c2 in zip(header1, header2):
-            if are_different(c1, c2):
-                if (not skip_empty) or (skip_empty and c1 != "" and c2 != ""):
-                    tot_diff += 1
-        tot_rows = 1
+        tot_rows = 0
+        infile1.seek(0)
+        reader1 = csv.reader(infile1, delimiter=delimiter)
+        infile2.seek(0)
+        reader2 = csv.reader(infile2, delimiter=delimiter)
         for row1, row2 in zip(reader1, reader2):
             pop_elements_from_list(row1, col_to_skip_indices1)
             pop_elements_from_list(row2, col_to_skip_indices2)
+            if sort_cols:
+                row1 = [row1[i] for i in sorted_indices1]
+                row2 = [row2[i] for i in sorted_indices2]
+
             for c1, c2 in zip(row1, row2):
                 if are_different(c1, c2):
                     if (not skip_empty) or (
@@ -122,22 +133,25 @@ columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
         if info_only:
             return
 
-        # Restore file pointers
+        # Start merge procedure
+        diff_cnt = 0
+        i_row = 0
         infile1.seek(0)
         reader1 = csv.reader(infile1, delimiter=delimiter)
         infile2.seek(0)
         reader2 = csv.reader(infile2, delimiter=delimiter)
-
-        diff_cnt = 0
-        i_row = 0
         for row1, row2 in zip_longest(reader1, reader2):
-            # Remove skipped columns
+            # Remove skipped columns and sort
             row1_skip = []
             if row1:
                 pop_elements_from_list(row1, col_to_skip_indices1, row1_skip)
+                if sort_cols:
+                    row1 = [row1[i] for i in sorted_indices1]
             row2_skip = []
             if row2:
                 pop_elements_from_list(row2, col_to_skip_indices2, row2_skip)
+                if sort_cols:
+                    row2 = [row2[i] for i in sorted_indices2]
 
             output_row = []
             if row1 is not None and row2 is not None:
@@ -258,6 +272,9 @@ automatically the same decision for each conflict: '1' to always pick the \
 value from file #1, '2' to pick the value from file #2, 'l' to pick the \
 longest value, 's' to pick the shortest value.")
     parser.add_argument(
+        "--sort", action="store_true", help="Sort alphabetically the columns \
+of the input files")
+    parser.add_argument(
         "--skip1", metavar="cn", nargs="+", help="Names of the columns to \
 remove from file #1 before the comparison. The columns are added back to the \
 output file, to the right")
@@ -287,7 +304,7 @@ the differences instead of ANSI escape sequences colors")
     # Run main function
     csvmerge(
         parser_args["i1"], parser_args["i2"], parser_args["o"],
-        parser_args["always"], parser_args["skip1"], parser_args["skip2"],
-        parser_args["delimiter"], parser_args["case_insensitive"],
-        parser_args["skip_empty"], parser_args["info"],
-        parser_args["no_color"])
+        parser_args["always"], parser_args["sort"], parser_args["skip1"],
+        parser_args["skip2"], parser_args["delimiter"],
+        parser_args["case_insensitive"], parser_args["skip_empty"],
+        parser_args["info"], parser_args["no_color"])

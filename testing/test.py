@@ -4,27 +4,28 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import csvmerge  # import ../csvmerge.py
 
 
-def test(i1, i2, ref=None, always="", skip1=[], skip2=[], skip_empty=False):
+def test(i1, i2, ref=None, always="", sort_cols_list=[False, True], skip1=[], skip2=[], skip_empty=False):
     error = False
     tmp_output = "out.csv"
 
-    for case_insensitive in [False, True]:
-        # Run function
-        csvmerge.csvmerge(i1, i2, tmp_output, always, skip1, skip2, ",", case_insensitive, skip_empty)
+    for sort_cols in sort_cols_list:
+        for case_insensitive in [False, True]:
+            # Run function
+            csvmerge.csvmerge(i1, i2, tmp_output, always, sort_cols, skip1, skip2, ",", case_insensitive, skip_empty)
 
-        # Check reference file
-        if ref:
-            with open(tmp_output) as outputfile:
-                with open(ref) as referencefile:
-                    if outputfile.read() != referencefile.read():
-                        error = True
+            # Check reference file
+            if ref:
+                with open(tmp_output) as outputfile:
+                    with open(ref) as referencefile:
+                        if outputfile.read() != referencefile.read():
+                            error = True
 
-        # Remove output file
-        os.remove(tmp_output)
+            # Remove output file
+            os.remove(tmp_output)
 
-        # Raise exception if error
-        if error:
-            raise Exception(f"Error! {i1} vs {i2} != {ref} (always: {always}, skip empty: {skip_empty}, case insensitive: {case_insensitive})")
+            # Raise exception if error
+            if error:
+                raise Exception(f"Error! {i1} vs {i2} != {ref} (always: {always}, sort cols: {sort_cols}, skip empty: {skip_empty}, case insensitive: {case_insensitive})")
 
 
 def test_pop(in_list, indices, ref, removed_ref):
@@ -53,13 +54,17 @@ def main():
     # --- Content x 2
     # ---- Skip columns x 4
 
+    # To test the sort option:
+    # - By default, all tests are run with False and True since the input files are already sorted
+    # - Tests with 5r_5c_unsorted.csv and sort=True should behave as tests with 5r_5c.csv and sort=False
+
     # - No always option (same content only, no decision taken)
     # -- Same size
     # --- Same content
     # ---- Don't skip
     test("3r_3c.csv", "3r_3c.csv", "3r_3c.csv")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "", [False, True], ['header2'], ['header2'])
     # -- Different number of rows (check rows tail)
     # --- Same content
     # ---- Don't skip
@@ -71,16 +76,18 @@ def main():
     test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv")
     test("3r_5c.csv", "3r_3c.csv", "3r_5c.csv")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "", ['header2'], ['header2'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip2_3r_3c_skip2.csv", "", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip2_3r_3c_skip2.csv", "", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns (columns not in common)
-    test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv", "", [], ['header5'])
-    test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv", "", [], ['header5', 'header4'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv", "", [False, True], [], ['header5'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv", "", [False, True], [], ['header5', 'header4'])
     # -- Different number of rows and columns (check both tails)
     # --- Same content
     # ---- Don't skip
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv")
-    test("5r_5c.csv", "3r_3c.csv", "5r_5c.csv")
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "", [True])
+    test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv")
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "", [True])
 
     # - Always=1
     # -- Same size
@@ -88,19 +95,19 @@ def main():
     # ---- Don't skip
     test("3r_3c.csv", "3r_3c.csv", "3r_3c.csv", "1")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "1", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip1_3r_3c_skip3.csv", "1", ['header1'], ['header3'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip1_3r_3c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err.csv", "1")
     test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c.csv",     "1")
     # ---- Skip same columns
-    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip2_3r_3c_skip2.csv", "1", ['header2'], ['header2'])
-    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip2_3r_3c_err_skip2.csv", "1", ['header2'], ['header2'])
+    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip2_3r_3c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip2_3r_3c_err_skip2.csv", "1", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns
-    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip1_3r_3c_skip3.csv", "1", ['header1'], ['header3'])
-    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip1_3r_3c_err_skip3.csv", "1", ['header1'], ['header3'])
+    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip1_3r_3c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
+    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip1_3r_3c_err_skip3.csv", "1", [False, True], ['header1'], ['header3'])
     # -- Different number of rows (check rows tail)
     # --- Same content
     # ---- Don't skip
@@ -118,13 +125,13 @@ def main():
     test("3r_3c.csv", "3r_5c.csv", "3r_5c.csv", "1")
     test("3r_5c.csv", "3r_3c.csv", "3r_5c.csv", "1")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "1", ['header2'], ['header2'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "1", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns (columns in common)
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip1_3r_5c_skip3.csv", "1", ['header1'], ['header3'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip1_3r_3c_skip3.csv", "1", ['header1'], ['header3'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip1_3r_5c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip1_3r_3c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
     # ---- Skip different columns (columns not in common)
-    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip4_3r_3c_skip3.csv", "1", ['header4'], ['header3'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip4_3r_3c_skip3.csv", "1", [False, True], ['header4'], ['header3'])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv", "3r_5c.csv",     "3r_5c_err2.csv", "1")
@@ -132,29 +139,33 @@ def main():
     test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err.csv",  "1")
     test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c.csv",      "1")
     # ---- Skip same columns
-    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip2_3r_5c_skip2.csv", "1", ['header2'], ['header2'])
-    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip2_3r_5c_err_skip2.csv", "1", ['header2'], ['header2'])
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip2_3r_3c_skip2.csv", "1", ['header2'], ['header2'])
-    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip2_3r_3c_err_skip2.csv", "1", ['header2'], ['header2'])
+    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip2_3r_5c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip2_3r_5c_err_skip2.csv", "1", [False, True], ['header2'], ['header2'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip2_3r_3c_skip2.csv", "1", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip2_3r_3c_err_skip2.csv", "1", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns (columns in common)
-    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip1_3r_5c_skip3.csv", "1", ['header1'], ['header3'])
-    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip1_3r_5c_err_skip3.csv", "1", ['header1'], ['header3'])
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip1_3r_3c_skip3.csv", "1", ['header1'], ['header3'])
-    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip1_3r_3c_err_skip3.csv", "1", ['header1'], ['header3'])
+    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip1_3r_5c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
+    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip1_3r_5c_err_skip3.csv", "1", [False, True], ['header1'], ['header3'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip1_3r_3c_skip3.csv", "1", [False, True], ['header1'], ['header3'])
+    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip1_3r_3c_err_skip3.csv", "1", [False, True], ['header1'], ['header3'])
     # ---- Skip different columns (columns not in common)
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip4_3r_3c_skip3.csv", "1", ['header4'], ['header3'])
-    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip4_3r_3c_err_skip3.csv", "1", ['header4'], ['header3'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip4_3r_3c_skip3.csv", "1", [False, True], ['header4'], ['header3'])
+    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip4_3r_3c_err_skip3.csv", "1", [False, True], ['header4'], ['header3'])
     # -- Different number of rows and columns (check both tails)
     # --- Same content
     # ---- Don't skip
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv", "1")
-    test("5r_5c.csv", "3r_3c.csv", "5r_5c.csv", "1")
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "1")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "1", "", [True])
+    test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "1")
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "1", "", [True])
     # --- Different content
     # ---- Don't skip
-    test("3r_3c_err.csv", "5r_5c.csv",     "5r_5c_err2.csv", "1")
-    test("3r_3c.csv",     "5r_5c_err.csv", "5r_5c_err3.csv", "1")
-    test("5r_5c_err.csv", "3r_3c.csv",     "5r_5c_err.csv",  "1")
-    test("5r_5c.csv",     "3r_3c_err.csv", "5r_5c.csv",      "1")
+    test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c_err2.csv", "1")
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "1", "", [True])
+    test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err3.csv", "1")
+    test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err.csv",  "1")
+    test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c.csv",      "1")
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "1", "", [True])
 
     # - Always=2
     # -- Same size
@@ -190,14 +201,18 @@ def main():
     # -- Different number of rows and columns (check both tails)
     # --- Same content
     # ---- Don't skip
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv", "2")
-    test("5r_5c.csv", "3r_3c.csv", "5r_5c.csv", "2")
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "2")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "2", "", [True])
+    test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "2")
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "2", "", [True])
     # --- Different content
     # ---- Don't skip
-    test("3r_3c_err.csv", "5r_5c.csv",     "5r_5c.csv",      "2")
-    test("3r_3c.csv",     "5r_5c_err.csv", "5r_5c_err.csv",  "2")
-    test("5r_5c_err.csv", "3r_3c.csv",     "5r_5c_err3.csv", "2")
-    test("5r_5c.csv",     "3r_3c_err.csv", "5r_5c_err2.csv", "2")
+    test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c.csv",      "2")
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c.csv",      "2", "", [True])
+    test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err.csv",  "2")
+    test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err3.csv", "2")
+    test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c_err2.csv", "2")
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c_err2.csv", "2", "", [True])
 
     # - Always=l/s (error cells are the longest)
     # -- Same size
@@ -206,19 +221,19 @@ def main():
     test("3r_3c.csv", "3r_3c.csv", "3r_3c.csv", "l")
     test("3r_3c.csv", "3r_3c.csv", "3r_3c.csv", "s")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "s", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip2_3r_3c_skip2.csv", "s", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns
-    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip1_3r_3c_skip3.csv", "l", ['header1'], ['header3'])
+    test("3r_3c.csv", "3r_3c.csv", "3r_3c_skip1_3r_3c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err.csv", "l")
     test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c.csv",     "s")
     # ---- Skip same columns
-    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip2_3r_3c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip2_3r_3c_err_skip2.csv", "s", ['header2'], ['header2'])
+    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip2_3r_3c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv",     "3r_3c_err.csv", "3r_3c_skip2_3r_3c_err_skip2.csv", "s", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns
-    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip1_3r_3c_skip3.csv", "l", ['header1'], ['header3'])
+    test("3r_3c_err.csv", "3r_3c.csv",     "3r_3c_err_skip1_3r_3c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
     # -- Different number of rows (check rows tail)
     # --- Same content
     # ---- Don't skip
@@ -240,15 +255,15 @@ def main():
     test("3r_5c.csv", "3r_3c.csv", "3r_5c.csv", "l")
     test("3r_5c.csv", "3r_3c.csv", "3r_5c.csv", "s")
     # ---- Skip same columns
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "s", ['header2'], ['header2'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "s", ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "s", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_3c_skip2_3r_5c_skip2.csv", "s", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns (columns in common)
-    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip1_3r_5c_skip3.csv", "l", ['header1'], ['header3'])
-    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip1_3r_3c_skip3.csv", "l", ['header1'], ['header3'])
+    test("3r_3c.csv", "3r_5c.csv", "3r_3c_skip1_3r_5c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip1_3r_3c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
     # ---- Skip different columns (columns not in common)
-    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip4_3r_3c_skip3.csv", "l", ['header4'], ['header3'])
+    test("3r_5c.csv", "3r_3c.csv", "3r_5c_skip4_3r_3c_skip3.csv", "l", [False, True], ['header4'], ['header3'])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv", "3r_5c.csv",     "3r_5c_err2.csv", "l")
@@ -256,29 +271,35 @@ def main():
     test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err.csv",  "l")
     test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c.csv",      "s")
     # ---- Skip same columns
-    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip2_3r_5c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip2_3r_5c_err_skip2.csv", "s", ['header2'], ['header2'])
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip2_3r_3c_skip2.csv", "l", ['header2'], ['header2'])
-    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip2_3r_3c_err_skip2.csv", "s", ['header2'], ['header2'])
+    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip2_3r_5c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_3c.csv",     "3r_5c_err.csv", "3r_3c_skip2_3r_5c_err_skip2.csv", "s", [False, True], ['header2'], ['header2'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip2_3r_3c_skip2.csv", "l", [False, True], ['header2'], ['header2'])
+    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip2_3r_3c_err_skip2.csv", "s", [False, True], ['header2'], ['header2'])
     # ---- Skip different columns (columns in common)
-    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip1_3r_5c_skip3.csv", "l", ['header1'], ['header3'])
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip1_3r_3c_skip3.csv", "l", ['header1'], ['header3'])
+    test("3r_3c_err.csv", "3r_5c.csv",     "3r_3c_err_skip1_3r_5c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip1_3r_3c_skip3.csv", "l", [False, True], ['header1'], ['header3'])
     # ---- Skip different columns (columns not in common)
-    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip4_3r_3c_skip3.csv", "l", ['header4'], ['header3'])
-    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip4_3r_3c_err_skip3.csv", "s", ['header4'], ['header3'])
+    test("3r_5c_err.csv", "3r_3c.csv",     "3r_5c_err_skip4_3r_3c_skip3.csv", "l", [False, True], ['header4'], ['header3'])
+    test("3r_5c.csv",     "3r_3c_err.csv", "3r_5c_skip4_3r_3c_err_skip3.csv", "s", [False, True], ['header4'], ['header3'])
     # -- Different number of rows and columns (check both tails)
     # --- Same content
     # ---- Don't skip
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv", "l")
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv", "s")
-    test("5r_5c.csv", "3r_3c.csv", "5r_5c.csv", "l")
-    test("3r_3c.csv", "5r_5c.csv", "5r_5c.csv", "s")
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "l")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "l", "", [True])
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "s")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", "", [True])
+    test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "l")
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "l", "", [True])
+    test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "s")
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", "", [True])
     # --- Different content
     # ---- Don't skip
-    test("3r_3c_err.csv", "5r_5c.csv",     "5r_5c_err2.csv", "l")
-    test("3r_3c.csv",     "5r_5c_err.csv", "5r_5c_err3.csv", "s")
-    test("5r_5c_err.csv", "3r_3c.csv",     "5r_5c_err.csv",  "l")
-    test("5r_5c.csv",     "3r_3c_err.csv", "5r_5c.csv",      "s")
+    test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c_err2.csv", "l")
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "l", "", [True])
+    test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err3.csv", "s")
+    test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err.csv",  "l")
+    test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c.csv",      "s")
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "s", "", [True])
 
     # Empty cells tests
     # - Same size
@@ -286,14 +307,17 @@ def main():
     test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "l")
     test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c_empty.csv", "2")
     test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c_empty.csv", "s")
-    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "", [], [], True)
-    test("3r_3c_empty.csv", "3r_3c.csv", "3r_3c.csv",       "", [], [], True)
+    test("3r_3c.csv", "3r_3c_empty.csv", "3r_3c.csv",       "", [False, True], [], [], True)
+    test("3r_3c_empty.csv", "3r_3c.csv", "3r_3c.csv",       "", [False, True], [], [], True)
     # - Different number of rows and columns
-    test("3r_3c.csv", "5r_5c_empty.csv", "3r_3c_5r_5c_empty.csv", "1")
-    test("3r_3c.csv", "5r_5c_empty.csv", "5r_5c_empty.csv",       "2")
-    test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             "1")
-    test("5r_5c.csv", "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", "2")
-    test("5r_5c.csv", "3r_3c_empty.csv", "5r_5c.csv",             "", [], [], True)
+    test("3r_3c.csv",          "5r_5c_empty.csv", "3r_3c_5r_5c_empty.csv", "1")
+    test("3r_3c.csv",          "5r_5c_empty.csv", "5r_5c_empty.csv",       "2")
+    test("5r_5c.csv",          "3r_3c_empty.csv", "5r_5c.csv",             "1")
+    test("5r_5c_unsorted.csv", "3r_3c_empty.csv", "5r_5c.csv",             "1", [True])
+    test("5r_5c.csv",          "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", "2")
+    test("5r_5c_unsorted.csv", "3r_3c_empty.csv", "3r_3c_empty_5r_5c.csv", "2", [True])
+    test("5r_5c.csv",          "3r_3c_empty.csv", "5r_5c.csv",             "",  [False, True], [], [], True)
+    test("5r_5c_unsorted.csv", "3r_3c_empty.csv", "5r_5c.csv",             "",  [True],        [], [], True)
 
     # Tests for pop_elements_from_list function:
     test_pop(['a', 'b', 'c', 'd', 'e'], [], ['a', 'b', 'c', 'd', 'e'], [])

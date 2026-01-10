@@ -23,7 +23,8 @@ If the user realizes that a specific conflict is going to recur consistently, th
   * `--always 2` to always pick the value from file n. 2.
   * `--always l` to always pick the longest value. If the two values have the same length, the value from file n. 1 will be selected.
   * `--always s` to always pick the shortest value. If the two values have the same length, the value from file n. 1 will be selected.
-* Use `--skip1 <column-name>` and `--skip2 <column-name>` to remove the specified columns from the comparison. You can specify multiple columns for both files. Removed columns are added back to the output file, on the right, file n. 1 before file n. 2. This option is useful when the two files share some, but not all, columns.
+* Use `--sort` to sort alphabetically the columns of both input files. This option is useful when the two files share some, but not all, columns.
+* Use `--skip1 <column-name>` and `--skip2 <column-name>` to remove the specified columns from the comparison. You can specify multiple columns for both files. Removed columns are added back to the output file, on the right, file n. 1 before file n. 2. This option, too, can be useful when the two files share some, but not all, columns.
 * Use `--delimiter <char>` to specify the character used to separate the values in the .csv files. It defaults to `,`.
 * Use `--skip-empty` to ignore empty values. If only one of the conflicting cells is empty, the value of the other cell will be automatically selected.
 * Use `--case-insensitive` to perform case-insensitive comparisons. If two values differ only by case, the value from file n. 1 will be selected.
