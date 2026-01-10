@@ -71,7 +71,7 @@ def get_longest_shortest(string1, string2):
 def csvmerge(
         in1_path, in2_path, out_path, always="", skip1=[], skip2=[],
         delimiter=",", case_insensitive=False, skip_empty=False,
-        nocolor=False):
+        info_only=False, nocolor=False):
     choices1 = []
     choices2 = []
     asterisks = ""
@@ -115,6 +115,14 @@ def csvmerge(
                         tot_diff += 1
             tot_rows += 1
 
+        # Print the info and exit when requested
+        tot_cols = min(len(header1), len(header2))
+        print(f"{tot_diff} conflicts for {tot_rows} rows and {tot_cols} \
+columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
+        if info_only:
+            return
+
+        # Restore file pointers
         infile1.seek(0)
         reader1 = csv.reader(infile1, delimiter=delimiter)
         infile2.seek(0)
@@ -163,7 +171,7 @@ def csvmerge(
                                     # Interactive execution
                                     while True:
                                         print(f"({diff_cnt}/{tot_diff}) Row \
-{i_row + 1} of {tot_rows}, Column {i_col + 1} {asterisks}")
+{i_row + 1} of {tot_rows}, column {i_col + 1} {asterisks}")
                                         print_highlighted_cell(
                                             row1, i_col, "[1]", not nocolor)
                                         print_highlighted_cell(
@@ -235,7 +243,9 @@ def csvmerge(
 
 if __name__ == "__main__":
     # Parse user arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "-h", "--help", action="help", help="Print this help message and exit")
     parser.add_argument(
         "-i1", metavar="file", help="Input file #1", required=True)
     parser.add_argument(
@@ -266,6 +276,9 @@ other cell is automatically selected")
 comparisons. If two values differ only by case, the value from file #1 will \
 be selected")
     parser.add_argument(
+        "--info", action="store_true", help="Print the information about the \
+input files and exit")
+    parser.add_argument(
         "--no-color", action="store_true", help="Use asterisks to highlight \
 the differences instead of ANSI escape sequences colors")
 
@@ -276,4 +289,5 @@ the differences instead of ANSI escape sequences colors")
         parser_args["i1"], parser_args["i2"], parser_args["o"],
         parser_args["always"], parser_args["skip1"], parser_args["skip2"],
         parser_args["delimiter"], parser_args["case_insensitive"],
-        parser_args["skip_empty"], parser_args["no_color"])
+        parser_args["skip_empty"], parser_args["info"],
+        parser_args["no_color"])
