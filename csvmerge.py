@@ -130,7 +130,7 @@ def csvmerge(
         # Print the info and exit when requested
         tot_cols = min(len(header1), len(header2))
         logging.debug(f"{tot_diff} conflicts for {tot_rows} rows and \
-{tot_cols} columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%)")
+{tot_cols} columns ({tot_diff/(tot_rows*tot_cols)*100:.1f}%).")
         if info_only:
             return
 
@@ -204,6 +204,8 @@ def csvmerge(
                                             user_input = input("> ")
                                             if user_input == "1":
                                                 output_row.append(c1)
+                                                logging.debug(
+                                                    f"{c1} selected.")
                                                 break
                                             elif user_input == "1+":
                                                 output_row.append(c1)
@@ -214,6 +216,8 @@ def csvmerge(
                                                 break
                                             elif user_input == "2":
                                                 output_row.append(c2)
+                                                logging.debug(
+                                                    f"{c2} selected.")
                                                 break
                                             elif user_input == "2+":
                                                 output_row.append(c2)
@@ -258,6 +262,7 @@ def csvmerge(
             # Write row in output file
             writer.writerow(output_row)
             i_row += 1
+        logging.debug(f"{i_row} rows written in {out}.")
 
 
 if __name__ == "__main__":
