@@ -265,51 +265,55 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=False)
     general = parser.add_argument_group("General options")
     general.add_argument(
-        "-i1", metavar="file", help="Input file #1", required=True)
+        "-i1", metavar="FILE", help="Input file #1", required=True)
     general.add_argument(
-        "-i2", metavar="file", help="Input file #2", required=True)
+        "-i2", metavar="FILE", help="Input file #2", required=True)
     general.add_argument(
-        "-o",  metavar="file", help="Output file", required=True)
-    general.add_argument(
-        "--always", default="", choices=["1", "2", "l", "s"], help="Adopt \
-automatically the same decision for each conflict: '1' to always pick the \
-value from file #1, '2' to pick the value from file #2, 'l' to pick the \
-longest value, 's' to pick the shortest value.")
-    general.add_argument(
+        "-o",  metavar="FILE", help="Output file", required=True)
+
+    input_arg = parser.add_argument_group("Input files options")
+    input_arg.add_argument(
         "--sort", action="store_true", help="Sort alphabetically the columns \
 of the input files")
-    general.add_argument(
-        "--skip1", metavar="cn", nargs="+", help="Names of the columns to \
+    input_arg.add_argument(
+        "--skip1", metavar="CN", nargs="+", help="Names of the columns to \
 remove from file #1 before the comparison. The columns are added back to the \
 output file, to the right")
-    general.add_argument(
-        "--skip2", metavar="cn", nargs="+", help="Names of the columns to \
+    input_arg.add_argument(
+        "--skip2", metavar="CN", nargs="+", help="Names of the columns to \
 remove from file #2 before the comparison. The columns are added back to the \
 output file, to the right")
-    general.add_argument(
-        "--delimiter", metavar="char", default=",", help="Character used to \
-separate the fields in the files")
-    general.add_argument("--skip-empty", action="store_true", help="Ignore \
-empty values. If only one of the conflicting cells is empty, the value of the \
-other cell is automatically selected")
-    general.add_argument(
+
+    merge = parser.add_argument_group("Merge options")
+    merge.add_argument(
         "--case-insensitive", action="store_true", help="Use case insensitive \
 comparisons. If two values differ only by case, the value from file #1 will \
 be selected")
-    general.add_argument(
-        "--info", action="store_true", help="Print the information about the \
-input files and exit")
-    general.add_argument(
-        "-h", "--help", action="help", help="Print this help message and exit")
+    merge.add_argument("--skip-empty", action="store_true", help="Ignore \
+empty values: when only one of the conflicting cells is empty, the value of \
+the other cell is automatically selected")
+    merge.add_argument(
+        "--always", default="", choices=["1", "2", "l", "s"], help="Adopt \
+automatically the same decision for each conflict: '1' to always pick the \
+value from file #1, '2' to pick the value from file #2, 'l' to pick the \
+longest value, 's' to pick the shortest value")
 
-    logging_arg = parser.add_argument_group("Logging options")
-    logging_arg.add_argument(
+    other_arg = parser.add_argument_group("Other options")
+    other_arg.add_argument(
+        "-h", "--help", action="help", help="Print this help message and exit")
+    other_arg.add_argument(
         "-q", "--quiet", default=logging.DEBUG, action="store_const",
         dest="logging_level", const=logging.INFO,
         help="Activate quiet mode")
-    logging_arg.add_argument(
+    other_arg.add_argument(
         "--no-color", action="store_true", help="Use asterisks to highlight \
-the differences instead of red (ANSI escape sequences)")
+the differences instead of the color red (ANSI escape sequences)")
+    other_arg.add_argument(
+        "--info", action="store_true", help="Print just the information about \
+the input files and exit")
+    other_arg.add_argument(
+        "--delimiter", metavar="CHAR", default=",", help="Character used to \
+separate the fields in the input and output files (default: ',')")
 
     parser_args = vars(parser.parse_args())
 
