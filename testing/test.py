@@ -12,7 +12,8 @@ def test(i1, i2, ref=None, always="", sort_cols_list=[False, True], skip1=[], sk
     for sort_cols in sort_cols_list:
         for case_insensitive in [False, True]:
             # Run function
-            csvmerge.csvmerge(i1, i2, tmp_output, always, sort_cols, skip1, skip2, ",", case_insensitive, skip_empty)
+            c = csvmerge.CSVMerge(i1, i2, tmp_output, always, sort_cols, skip1, skip2, ",", case_insensitive, skip_empty)
+            c.run()
 
             # Check reference file
             if ref:
