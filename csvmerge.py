@@ -38,7 +38,7 @@ def print_highlighted_cell(row, i_to_highlight, header, color=True):
     logging.info(message)
 
 
-def get_indices_cols_to_skip(col_names, header):
+def get_indices_from_col_names(col_names, header):
     col_to_skip_indices = []
     if col_names:
         for col_to_skip in col_names:
@@ -71,8 +71,8 @@ def get_longest_shortest(string1, string2):
 
 class CSVMerge:
     def __init__(self, in1, in2, out, always="", sort_cols=False, skip1=[],
-                 skip2=[], delimiter=",", case_insensitive=False,
-                 skip_empty=False, no_color=False):
+                 skip2=[], drop1=[], drop2=[], delimiter=",",
+                 case_insensitive=False, skip_empty=False, no_color=False):
         self.in1 = in1
         self.in2 = in2
         self.out = out
@@ -80,6 +80,8 @@ class CSVMerge:
         self.sort_cols = sort_cols
         self.skip1 = skip1
         self.skip2 = skip2
+        self.drop1 = drop1
+        self.drop2 = drop2
         self.delimiter = delimiter
         if case_insensitive:
             self.are_different = case_insensitive_diff
@@ -90,6 +92,8 @@ class CSVMerge:
 
         self.col_to_skip_indices1 = []
         self.col_to_skip_indices2 = []
+        self.col_to_drop_indices1 = []
+        self.col_to_drop_indices2 = []
         self.sorted_indices1 = []
         self.sorted_indices2 = []
         self.tot_rows = 0
@@ -103,17 +107,27 @@ class CSVMerge:
             reader1 = csv.reader(infile1, delimiter=self.delimiter)
             reader2 = csv.reader(infile2, delimiter=self.delimiter)
 
-            # Look for the indices of the columns to skip
+            # Look for the indices of the columns to skip and drop
             header1 = next(reader1)
-            self.col_to_skip_indices1 = get_indices_cols_to_skip(
+            self.col_to_skip_indices1 = get_indices_from_col_names(
                 self.skip1, header1)
             pop_elements_from_list(header1, self.col_to_skip_indices1)
+            self.col_to_drop_indices1 = get_indices_from_col_names(
+                self.drop1, header1)
+            pop_elements_from_list(header1, self.col_to_drop_indices1)
+
             header2 = next(reader2)
-            self.col_to_skip_indices2 = get_indices_cols_to_skip(
+            self.col_to_skip_indices2 = get_indices_from_col_names(
                 self.skip2, header2)
             pop_elements_from_list(header2, self.col_to_skip_indices2)
+            self.col_to_drop_indices2 = get_indices_from_col_names(
+                self.drop2, header2)
+            pop_elements_from_list(header2, self.col_to_drop_indices2)
 
-            # Get sorted column indices
+            # Compute total number of columns from headers
+            self.tot_cols = max(len(header1), len(header2))
+
+            # Get sorted column indices (after pop)
             if self.sort_cols:
                 sorted_col1 = sorted(
                     list(enumerate(header1)), key=lambda x: x[1])
@@ -122,9 +136,6 @@ class CSVMerge:
                     list(enumerate(header2)), key=lambda x: x[1])
                 self.sorted_indices2 = [idx for idx, _ in sorted_col2]
 
-            # Compute total number of columns from headers
-            self.tot_cols = min(len(header1), len(header2))
-
             # Count total number of conflicts and rows
             infile1.seek(0)
             reader1 = csv.reader(infile1, delimiter=self.delimiter)
@@ -132,7 +143,9 @@ class CSVMerge:
             reader2 = csv.reader(infile2, delimiter=self.delimiter)
             for row1, row2 in zip(reader1, reader2):
                 pop_elements_from_list(row1, self.col_to_skip_indices1)
+                pop_elements_from_list(row1, self.col_to_drop_indices1)
                 pop_elements_from_list(row2, self.col_to_skip_indices2)
+                pop_elements_from_list(row2, self.col_to_drop_indices2)
                 if self.sort_cols:
                     row1 = [row1[i] for i in self.sorted_indices1]
                     row2 = [row2[i] for i in self.sorted_indices2]
@@ -145,10 +158,10 @@ class CSVMerge:
                 self.tot_rows += 1
 
         # Print number of conflicts, rows and columns
-        logging.debug(
-            f"{self.tot_diff} conflicts for {self.tot_rows} rows and \
-{self.tot_cols} columns ({self.tot_diff/(self.tot_rows*self.tot_cols)*100:.1f}\
-%).")
+        if self.tot_cols != 0 and self.tot_rows != 0:
+            logging.debug(f"{self.tot_diff} conflicts for {self.tot_rows} \
+rows and {self.tot_cols} columns \
+({self.tot_diff/(self.tot_rows*self.tot_cols)*100:.1f}%).")
 
     def run(self):
         with open(self.in1, mode="r", newline="", encoding="utf-8-sig") as \
@@ -173,12 +186,14 @@ class CSVMerge:
                 if row1:
                     pop_elements_from_list(
                         row1, self.col_to_skip_indices1, row1_skip)
+                    pop_elements_from_list(row1, self.col_to_drop_indices1)
                     if self.sort_cols:
                         row1 = [row1[i] for i in self.sorted_indices1]
                 row2_skip = []
                 if row2:
                     pop_elements_from_list(
                         row2, self.col_to_skip_indices2, row2_skip)
+                    pop_elements_from_list(row2, self.col_to_drop_indices2)
                     if self.sort_cols:
                         row2 = [row2[i] for i in self.sorted_indices2]
 
@@ -320,6 +335,14 @@ output file, to the right")
         "--skip2", metavar="CN", nargs="+", help="Names of the columns to \
 remove from file #2 before the comparison. The columns are added back to the \
 output file, to the right")
+    input_arg.add_argument(
+        "--drop1", metavar="CN", nargs="+", help="Names of the columns to \
+remove from file #1 before the comparison. The columns are not added back to \
+the output file.")
+    input_arg.add_argument(
+        "--drop2", metavar="CN", nargs="+", help="Names of the columns to \
+remove from file #2 before the comparison. The columns are not added back to \
+the output file.")
 
     merge = parser.add_argument_group("Merge options")
     merge.add_argument(
@@ -362,9 +385,9 @@ separate the fields in the input and output files (default: ',')")
     c = CSVMerge(
         parser_args["i1"], parser_args["i2"], parser_args["o"],
         parser_args["always"], parser_args["sort"], parser_args["skip1"],
-        parser_args["skip2"], parser_args["delimiter"],
-        parser_args["case_insensitive"], parser_args["skip_empty"],
-        parser_args["no_color"])
+        parser_args["skip2"], parser_args["drop1"], parser_args["drop2"],
+        parser_args["delimiter"], parser_args["case_insensitive"],
+        parser_args["skip_empty"], parser_args["no_color"])
 
     if not parser_args["info"]:
         c.run()

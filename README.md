@@ -26,6 +26,7 @@ Iris data set from different sources<sup>1</sup>
 
 * Use `--sort` to sort alphabetically the columns of both input files. This option is useful when the two files share some, but not all, columns.
 * Use `--skip1 <column-name>` and `--skip2 <column-name>` to remove the specified columns from file n. 1 and file n. 2 before the comparison begins. You can specify multiple columns for both files. Removed columns are added back to the output file, on the right, file n. 1 before file n. 2. This option, too, can be useful when the two files share only some columns.
+* Use `--drop1 <column-name>` and `--drop2 <column-name>` to remove the specified columns from file n. 1 and file n. 2 before the comparison begins. You can specify multiple columns for both files. Removed columns are not added back to the output file.
 * Use `--case-insensitive` to perform case-insensitive comparisons. If two values differ only by case, the value from file n. 1 will be selected.
 * Use `--skip-empty` to ignore empty values. If only one of the conflicting cells is empty, the value of the other cell will be automatically selected.
 * Use `--always <id>` if you already know what to do in case of conflict and you don't need to interact with the tool:

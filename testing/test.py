@@ -9,25 +9,52 @@ def test(i1, i2, ref=None, always="", sort_cols_list=[False, True], skip1=[], sk
     error = False
     tmp_output = "out.csv"
 
-    for sort_cols in sort_cols_list:
-        for case_insensitive in [False, True]:
-            # Run function
-            c = csvmerge.CSVMerge(i1, i2, tmp_output, always, sort_cols, skip1, skip2, ",", case_insensitive, skip_empty)
-            c.run()
+    # Test drop options:
+    # Convert to lists in order to use zip
+    i1_list = [i1]
+    i2_list = [i2]
+    drop1 = [[]]
+    drop2 = [[]]
+    # i1 == '3r_3c.csv' <-> '3r_5c.csv' with drop1=last 2 cols
+    # i1 == '5r_3c.csv' <-> '5r_5c.csv' with drop1=last 2 cols
+    # i2 == '3r_3c.csv' <-> '3r_5c.csv' with drop2=last 2 cols
+    # i2 == '5r_3c.csv' <-> '5r_5c.csv' with drop2=last 2 cols
+    if (i1[-6:] == '3c.csv'):  # i1 == '3r_3c.csv' or i1 == '5r_3c.csv'
+        i1_list.append(f'{i1[:2]}_5c.csv')  # append('3r_5c.csv') or append('5r_5c.csv')
+        i2_list.append(i2)
+        drop1.append(['header4', 'header5'])
+        drop2.append([])
+    if (i2[-6:] == '3c.csv'):  # i2 == '3r_3c.csv' or i2 == '5r_3c.csv'
+        i1_list.append(i1)
+        i2_list.append(f'{i2[:2]}_5c.csv')  # append('3r_5c.csv') or append('5r_5c.csv')
+        drop1.append([])
+        drop2.append(['header4', 'header5'])
+    if (i1[-6:] == '3c.csv' and i2[-6:] == '3c.csv'):
+        i1_list.append(f'{i1[:2]}_5c.csv')
+        i2_list.append(f'{i2[:2]}_5c.csv')
+        drop1.append(['header4', 'header5'])
+        drop2.append(['header4', 'header5'])
 
-            # Check reference file
-            if ref:
-                with open(tmp_output) as outputfile:
-                    with open(ref) as referencefile:
-                        if outputfile.read() != referencefile.read():
-                            error = True
+    for i1_i2_d1_d2 in zip(i1_list, i2_list, drop1, drop2):
+        for sort_cols in sort_cols_list:
+            for case_insensitive in [False, True]:
+                # Run function
+                c = csvmerge.CSVMerge(i1_i2_d1_d2[0], i1_i2_d1_d2[1], tmp_output, always, sort_cols, skip1, skip2, i1_i2_d1_d2[2], i1_i2_d1_d2[3], ",", case_insensitive, skip_empty)
+                c.run()
 
-            # Remove output file
-            os.remove(tmp_output)
+                # Check reference file
+                if ref:
+                    with open(tmp_output) as outputfile:
+                        with open(ref) as referencefile:
+                            if outputfile.read() != referencefile.read():
+                                error = True
 
-            # Raise exception if error
-            if error:
-                raise Exception(f"Error! {i1} vs {i2} != {ref} (always: {always}, sort cols: {sort_cols}, skip empty: {skip_empty}, case insensitive: {case_insensitive})")
+                # Remove output file
+                os.remove(tmp_output)
+
+                # Raise exception if error
+                if error:
+                    raise Exception(f"Error! {i1_i2_d1_d2[0]} vs {i1_i2_d1_d2[1]} != {ref}\n- always: {always}\n- sort cols: {sort_cols}\n- skip: {skip1} {skip2}\n- drop: {i1_i2_d1_d2[2]} {i1_i2_d1_d2[3]}\n- skip empty: {skip_empty}\n- case insensitive: {case_insensitive}")
 
 
 def test_pop(in_list, indices, ref, removed_ref):
@@ -62,6 +89,9 @@ def main():
     # To test the sort option:
     # - By default, all tests are run with False and True since the input files are already sorted
     # - Tests with 5r_5c_unsorted.csv and sort=True should behave as tests with 5r_5c.csv and sort=False
+
+    # To test the drop options:
+    # - By default, tests with *_5c.csv and drop=[header4,header5] should behave as tests with *_3c.csv
 
     # - No always option (same content only, no decision taken)
     # -- Same size
@@ -160,17 +190,17 @@ def main():
     # --- Same content
     # ---- Don't skip
     test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "1")
-    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "1", "", [True])
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "1", [True])
     test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "1")
-    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "1", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "1", [True])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c_err2.csv", "1")
-    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "1", "", [True])
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "1", [True])
     test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err3.csv", "1")
     test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err.csv",  "1")
     test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c.csv",      "1")
-    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "1", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "1", [True])
 
     # - Always=2
     # -- Same size
@@ -207,17 +237,17 @@ def main():
     # --- Same content
     # ---- Don't skip
     test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "2")
-    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "2", "", [True])
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "2", [True])
     test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "2")
-    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "2", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "2", [True])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c.csv",      "2")
-    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c.csv",      "2", "", [True])
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c.csv",      "2", [True])
     test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err.csv",  "2")
     test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err3.csv", "2")
     test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c_err2.csv", "2")
-    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c_err2.csv", "2", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c_err2.csv", "2", [True])
 
     # - Always=l/s (error cells are the longest)
     # -- Same size
@@ -290,21 +320,21 @@ def main():
     # --- Same content
     # ---- Don't skip
     test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "l")
-    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "l", "", [True])
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "l", [True])
     test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "s")
-    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", "", [True])
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", [True])
     test("5r_5c.csv",          "3r_3c.csv",          "5r_5c.csv", "l")
-    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "l", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c.csv",          "5r_5c.csv", "l", [True])
     test("3r_3c.csv",          "5r_5c.csv",          "5r_5c.csv", "s")
-    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", "", [True])
+    test("3r_3c.csv",          "5r_5c_unsorted.csv", "5r_5c.csv", "s", [True])
     # --- Different content
     # ---- Don't skip
     test("3r_3c_err.csv",      "5r_5c.csv",          "5r_5c_err2.csv", "l")
-    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "l", "", [True])
+    test("3r_3c_err.csv",      "5r_5c_unsorted.csv", "5r_5c_err2.csv", "l", [True])
     test("3r_3c.csv",          "5r_5c_err.csv",      "5r_5c_err3.csv", "s")
     test("5r_5c_err.csv",      "3r_3c.csv",          "5r_5c_err.csv",  "l")
     test("5r_5c.csv",          "3r_3c_err.csv",      "5r_5c.csv",      "s")
-    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "s", "", [True])
+    test("5r_5c_unsorted.csv", "3r_3c_err.csv",      "5r_5c.csv",      "s", [True])
 
     # Empty cells tests
     # - Same size
